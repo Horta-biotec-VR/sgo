@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exemplo de Integração com Google Apps Script</title>
+  <link rel="stylesheet" href="list.css">
+
+  <style>
+    /* Estilo para a mensagem de "Nenhuma correspondência" */
+    .no-results {
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    .no-results img {
+      width: 200px;
+      height: auto;
+      display: block;
+      margin: 0 auto 20px;
+    }
+
+    .card {
+      cursor: pointer;
+      transition: transform 0.3s ease-in-out;
+      position: relative;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .details {
+      display: none;
+    }
+
+    .card.expanded .details {
+      display: block;
+    }
+
+    #registerButton {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4cbd4c;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .loader {
+      background: transparent;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .circle {
+      width: 80px;
+      height: 80px;
+      border: 2px solid #ccc;
+      position: absolute;
+      border-radius: 50%;
+      animation: circle14512 2s linear infinite;
+    }
+
+    .circle::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #9ae932;
+      box-shadow: 0 0 20px #9ae932, 0 0 60px #9ae932;
+    }
+
+    @keyframes circle14512 {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .id-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 5px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-bottom-left-radius: 5px;
+    }
+
+    .id-container span {
+      font-weight: bold;
+    }
+
+    .descricao {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Consultar Cultivares</h1>
+    <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="filter()">
+    <div>
+      <label for="cicloSelect">Ciclo:</label>
+      <select id="cicloSelect" onchange="filter()">
+        <option value="all">Todos</option>
+        <option value="perene">Perene</option>
+        <option value="anual">Anual</option>
+      </select>
+    </div>
+    <div id="respostaServidor"></div>
+    <div class="no-results" id="noResults" style="display: none;">
+      <img src="falha.jpg" alt="Nenhuma correspondência">
+      <p>Ops, nenhuma correspondência com as plantas pesquisadas</p>
+      <button id="registerButton" onclick="registerCultivar()">Registrar Cultivar</button>
+    </div>
+  </div>
+
+  <div id="loading-container" style="display: none; justify-content: center; align-items: center; ">
+    <div class="loader" style="margin-bottom: 10px;">
+      <div class="circle"></div>
+    </div>
+    <p style="margin: 20px;">Carregando registros...</p>
+  </div>
+
+  <script>
+    function filter() {
+      var input = document.getElementById('searchInput').value.toUpperCase();
+      var cicloType = document.getElementById('cicloSelect').value;
+      var cards = document.querySelectorAll('.card');
+      var noResults = document.getElementById('noResults');
+
+      var hasResults = false; // Variável para verificar se há resultados
+
+      cards.forEach(function(card) {
+        var cardText = card.textContent.toUpperCase();
+        var cicloText = card.querySelector('.ciclo').textContent.toUpperCase();
+        if ((cicloType === 'all' || cicloText.indexOf(cicloType.toUpperCase()) > -1) && (input === '' || cardText.indexOf(input) > -1)) {
+          card.style.display = '';
+          hasResults = true; // Se houver resultados, altere para true
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Se não houver resultados, exiba a mensagem de "Nenhuma correspondência"
+      if (!hasResults) {
+        noResults.style.display = 'block';
+      } else {
+        noResults.style.display = 'none';
+      }
+    }
+
+    function registerCultivar() {
+      // Coloque aqui o código para registrar uma nova cultivar
+      alert("Registro de cultivar iniciado...");
+    }
+
+    function toggleDetails(card) {
+      card.classList.toggle('expanded');
+    }
+
+    window.onload = function() {
+      var dadosParaEnviar = {
+        "campo1": "valor1",
+        "campo2": "valor2",
+        // Adicione mais campos conforme necessário
+      };
+
+      var urlDoScript = "https://script.google.com/macros/s/AKfycbwzuw74mqB3OM1Aexd0XsbFJvr40qbTK879u6rMkF6SRqxSkHLOcDgUi2zinaCvzavOug/exec";
+
+      fetch(urlDoScript, {
+        method: "POST",
+        body: JSON.stringify(dadosParaEnviar),
+      })
+      .then(response => response.text())
+      .then(data => {
+        var linhas = data.split("\n");
+        linhas.shift();
+
+        linhas.forEach(function(linha) {
+          var campos = linha.split(",");
+          var cardHtml = `
+            <div class="card" onclick="toggleDetails(this)">
+              <div class="id-container">
+                <span>ID: ${campos[9]}</span>
+              </div>
+              <img src="${campos[7]}" alt="Imagem">
+              <div class="card-content">
+                <ul>
+                  <li class="nomePopular"><strong>Nome Popular:</strong> ${campos[0]}</li>
+                  <li class="nomeCientifico"><strong>Nome Científico:</strong> ${campos[1]}</li>
+                  <li class="ciclo"><strong>Ciclo:</strong> ${campos[2]}</li>
+                </ul>
+                <div class="details">
+                  
+                  <ul>
+                    <li class="tamanhoPlanta"><strong>Tamanho da Planta:</strong> ${campos[3]}</li>
+                    <li class="espacamento"><strong>Espaçamento:</strong> ${campos[4]} Cm</li>
+                    <li class="germinacao"><strong>Germinação:</strong> ${campos[5]} Dias </li>
+                  
+                    <div class="descricao">
+                    <strong>Descrição:</strong>
+                    <p>${campos[6]}</p>
+                  </div>  
+                  </ul>
+                </div>
+              </div>
+            </div>
+          `;
+          document.getElementById("respostaServidor").innerHTML += cardHtml;
+        });
+        document.getElementById("loading-container").style.display = 'none';
+      })
+      .catch(error => {
+        console.error("Ocorreu um erro:", error);
+        document.getElementById("loading-container").style.display = 'none';
+      });
+
+      document.getElementById("loading-container").style.display = 'flex';
+    };
+  </script>
+</body>
+</html>

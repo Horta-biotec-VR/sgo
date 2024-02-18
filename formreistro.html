@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Registro de Plantas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h2>Formulário de Registro de Plantas</h2>
+    <form id="registroForm" action="https://script.google.com/macros/s/AKfycbz9rKKtimi8VLqCvbwJPMjxPsB0tkegEZb4oqc6HZdrqYcx5MfWZbMtUjGcQfpcnMmgbA/exec" method="POST">
+        <div>
+            <label for="nome_popular">Nome Popular:</label>
+            <input type="text" id="nome_popular" name="nome_popular" required>
+        </div>
+        <div>
+            <label for="nome_cientifico">Nome Científico:</label>
+            <input type="text" id="nome_cientifico" name="nome_cientifico" required>
+        </div>
+        <div>
+            <label for="ciclo">Ciclo:</label>
+            <select id="ciclo" name="ciclo" required>
+                <option value="">Selecione</option>
+                <option value="Perene">Perene</option>
+                <option value="Anual">Anual</option>
+            </select>
+        </div>
+        <div id="intervaloDias" class="hide">
+            <label for="inicio_dias">Intervalo de Dias:</label>
+            <input type="number" id="inicio_dias" name="inicio_dias" min="1" required disabled> a 
+            <input type="number" id="fim_dias" name="fim_dias" min="1" required disabled>
+        </div>
+        <div>
+            <label for="tamanho_adulto">Tamanho Adulto da Planta (cm):</label>
+            <input type="number" id="tamanho_adulto_inicio" name="tamanho_adulto_inicio" placeholder="Mínimo" required>
+            a
+            <input type="number" id="tamanho_adulto_fim" name="tamanho_adulto_fim" placeholder="Máximo" required>
+        </div>
+        <div>
+            <label for="espacamento">Espaçamento Recomendado entre Plantas (cm):</label>
+            <input type="number" id="espacamento" name="espacamento" required>
+        </div>
+        <div>
+            <label for="tempo_germinacao">Tempo de Germinação (dias):</label>
+            <input type="number" id="tempo_germinacao" name="tempo_germinacao" min="1" required>
+        </div>
+        <div>
+            <label for="descricao">Descrição:</label>
+            <textarea id="descricao" name="descricao" rows="4"></textarea>
+        </div>
+        <div>
+            <label for="imagem">Imagem:</label>
+            <input type="url" id="imagem" name="imagem" oninput="showImagePreview()">
+            <div id="imagemPreview" class="hide">
+                <img id="preview" src="#" alt="Imagem de pré-visualização">
+            </div>
+        </div>
+        <input type="submit" value="Enviar">
+    </form>
+    <div id="mensagemSucesso" class="success-message hide"></div>
+    <div id="resumoDados" class="hide">
+        <h3>Resumo dos Dados Registrados:</h3>
+        <p><strong>Nome Popular:</strong> <span id="resumoNomePopular"></span></p>
+        <p><strong>Nome Científico:</strong> <span id="resumoNomeCientifico"></span></p>
+        <p><strong>Ciclo:</strong> <span id="resumoCiclo"></span></p>
+        <p id="resumoIntervaloDias" class="hide"><strong>Intervalo de Dias:</strong> <span id="resumoInicioDias"></span> a <span id="resumoFimDias"></span></p>
+        <p><strong>Tamanho Adulto da Planta:</strong> <span id="resumoTamanhoAdulto"></span></p>
+        <p><strong>Espaçamento Recomendado entre Plantas:</strong> <span id="resumoEspacamento"></span></p>
+        <p><strong>Tempo de Germinação:</strong> <span id="resumoTempoGerminacao"></span></p>
+        <p><strong>Descrição:</strong> <span id="resumoDescricao"></span></p>
+        <p><strong>Imagem:</strong> <span id="resumoImagem"></span></p>
+    </div>
+    
+    <script>
+       function showImagePreview() {
+    var input = document.getElementById('imagem');
+    var imagemPreview = document.getElementById('imagemPreview');
+    var preview = document.getElementById('preview');
+
+    if (input.value) {
+        preview.src = input.value;
+        imagemPreview.classList.remove('hide');
+    } else {
+        imagemPreview.classList.add('hide');
+    }
+}
+
+document.getElementById('registroForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    var formData = new FormData(this);
+    var tamanhoInicio = formData.get('tamanho_adulto_inicio');
+    var tamanhoFim = formData.get('tamanho_adulto_fim');
+    var tamanhoPlanta = tamanhoInicio + ' a ' + tamanhoFim + ' cm'; // Combina os valores em uma única string
+    formData.set('tamanho_adulto', tamanhoPlanta); // Define o valor combinado para o campo "tamanho_adulto"
+    var ciclo = formData.get('ciclo');
+    if (ciclo === 'Anual') {
+        var inicioDias = formData.get('inicio_dias');
+        var fimDias = formData.get('fim_dias');
+        var intervaloDias = inicioDias + ' a ' + fimDias + ' dias'; // Combina os valores em uma única string
+        formData.set('ciclo', ciclo + ' (' + intervaloDias + ')');
+    }
+    fetch(this.getAttribute('action'), {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('mensagemSucesso').innerText = data.message;
+        document.getElementById('mensagemSucesso').classList.remove('hide');
+        document.getElementById('resumoNomePopular').innerText = data.data.nomePopular;
+        document.getElementById('resumoNomeCientifico').innerText = data.data.nomeCientifico;
+        document.getElementById('resumoCiclo').innerText = data.data.ciclo;
+        document.getElementById('resumoTamanhoAdulto').innerText = data.data.tamanhoAdulto;
+        document.getElementById('resumoEspacamento').innerText = data.data.espacamento;
+        document.getElementById('resumoTempoGerminacao').innerText = data.data.tempoGerminacao;
+        document.getElementById('resumoDescricao').innerText = data.data.descricao;
+        document.getElementById('resumoImagem').innerText = data.data.imagemUrl;
+        document.getElementById('resumoDados').classList.remove('hide');
+        if (data.data.ciclo.includes('Anual')) {
+            document.getElementById('resumoIntervaloDias').innerText = intervaloDias;
+            document.getElementById('resumoIntervaloDias').classList.remove('hide');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao enviar o formulário:', error);
+    });
+});
+
+document.getElementById('ciclo').addEventListener('change', function() {
+    if (this.value === 'Anual') {
+        document.getElementById('intervaloDias').classList.remove('hide');
+        document.getElementById('inicio_dias').removeAttribute('disabled');
+        document.getElementById('fim_dias').removeAttribute('disabled');
+    } else {
+        document.getElementById('intervaloDias').classList.add('hide');
+        document.getElementById('inicio_dias').setAttribute('disabled', 'disabled');
+        document.getElementById('fim_dias').setAttribute('disabled', 'disabled');
+    }
+});
+
+    </script>
+</body>
+</html>
